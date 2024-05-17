@@ -125,6 +125,10 @@ module OpenTelemetry
           end
         end
 
+        def register_asynchronous_instrument(instrument)
+          register_synchronous_instrument(instrument)
+        end
+
         # The type of the Instrument(s) (optional).
         # The name of the Instrument(s). OpenTelemetry SDK authors MAY choose to support wildcard characters, with the question mark (?) matching exactly one character and the asterisk character (*) matching zero or more characters.
         # The name of the Meter (optional).
