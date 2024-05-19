@@ -68,8 +68,9 @@ module OpenTelemetry
             @mutex.synchronize do
               Timeout.timeout(timeout || 30) do
                 @callback.each do |cb|
-                  value = cb.call
-                  @aggregation.update(value, attributes)
+                  # See https://opentelemetry.io/docs/specs/otel/metrics/api/#asynchronous-updowncounter-creation
+                  value, callback_attributes = cb.call
+                  @aggregation.update(value, attributes.merge(callback_attributes || {}))
                 end
               end
             end
