@@ -233,7 +233,7 @@ module OpenTelemetry
               )
             )
 
-          when :counter, :up_down_counter
+          when :counter, :up_down_counter, :observable_up_down_counter
             Opentelemetry::Proto::Metrics::V1::Metric.new(
               name: metrics.name,
               description: metrics.description,
@@ -287,10 +287,14 @@ module OpenTelemetry
         def number_data_point(ndp)
           Opentelemetry::Proto::Metrics::V1::NumberDataPoint.new(
             attributes: ndp.attributes.map { |k, v| as_otlp_key_value(k, v) },
-            as_int: ndp.value,
             start_time_unix_nano: ndp.start_time_unix_nano,
             time_unix_nano: ndp.time_unix_nano,
-            exemplars: ndp.exemplars # exemplars not implemented yet from metrics sdk
+            exemplars: ndp.exemplars, # exemplars not implemented yet from metrics sdk
+            # See
+            # https://buf.build/opentelemetry/opentelemetry/docs/f81222fd2e5e45d8bd4dd3f135effcd0:opentelemetry.proto.metrics.v1#opentelemetry.proto.metrics.v1.NumberDataPoint
+            **(ndp.value.instance_of? Integer) ?
+              { as_int: ndp.value } :
+              { as_double: ndp.value }
           )
         end
 
