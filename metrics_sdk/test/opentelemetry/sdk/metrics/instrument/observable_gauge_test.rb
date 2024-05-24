@@ -16,7 +16,7 @@ describe OpenTelemetry::SDK::Metrics::Instrument::ObservableGauge do
     OpenTelemetry.meter_provider.add_metric_reader(metric_exporter)
   end
 
-  it 'counts without observe' do
+  it 'measures without observe' do
     callback = proc { 10 }
     meter.create_observable_gauge('gauge', unit: 'smidgen', description: 'a small amount of something', callback: callback)
 
@@ -32,7 +32,7 @@ describe OpenTelemetry::SDK::Metrics::Instrument::ObservableGauge do
     _(last_snapshot[0].aggregation_temporality).must_equal(:delta)
   end
 
-  it 'counts with observe' do
+  it 'measures with observe' do
     callback = proc { 10 }
     observable_gauge = meter.create_observable_gauge('gauge', unit: 'smidgen', description: 'a small amount of something', callback: callback)
     observable_gauge.observe(timeout: 10, attributes: { 'foo' => 'bar' })
@@ -50,5 +50,19 @@ describe OpenTelemetry::SDK::Metrics::Instrument::ObservableGauge do
     _(last_snapshot[0].data_points[1].value).must_equal(10)
     _(last_snapshot[0].data_points[1].attributes).must_equal({})
     _(last_snapshot[0].aggregation_temporality).must_equal(:delta)
+  end
+
+  it 'interprets the measurement as an absolute value' do
+    iter = [10, 40, 80].each
+    callback = proc { iter.next }
+    observable_gauge = meter.create_observable_gauge('gauge', unit: 'smidgen', description: 'a small amount of something', callback: callback)
+
+    observable_gauge.observe(timeout: 10, attributes: {})
+    metric_exporter.pull
+
+    _(metric_exporter.metric_snapshots.size).must_equal(1)
+
+    last_snapshot = metric_exporter.metric_snapshots.last
+    _(last_snapshot[0].data_points[0].value).must_equal(40)
   end
 end

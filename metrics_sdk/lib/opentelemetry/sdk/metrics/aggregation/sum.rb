@@ -51,6 +51,20 @@ module OpenTelemetry
             ndp.value += increment
             nil
           end
+
+          # Report an absolute value
+          def set_value(value, attributes)
+            ndp = @data_points[attributes] || @data_points[attributes] = NumberDataPoint.new(
+              attributes,
+              nil,
+              nil,
+              0,
+              nil
+            )
+
+            ndp.value = value
+            nil
+          end
         end
       end
     end

@@ -5,6 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 require 'test_helper'
+require 'pry-byebug'
 
 describe OpenTelemetry::SDK::Metrics::Instrument::ObservableUpDownCounter do
   let(:metric_exporter) { OpenTelemetry::SDK::Metrics::Export::InMemoryMetricPullExporter.new }
@@ -50,5 +51,26 @@ describe OpenTelemetry::SDK::Metrics::Instrument::ObservableUpDownCounter do
     _(last_snapshot[0].data_points[1].value).must_equal(10)
     _(last_snapshot[0].data_points[1].attributes).must_equal({})
     _(last_snapshot[0].aggregation_temporality).must_equal(:cumulative)
+  end
+
+  it 'observations are considered absolute values' do
+    # See https://opentelemetry.io/docs/specs/otel/metrics/api/#asynchronous-updowncounter-creation
+    callback = proc { 10 }
+    up_down_counter = meter.create_observable_up_down_counter('updown_counter', unit: 'smidgen', description: 'a small amount of something', callback: callback)
+    
+    metric_exporter.pull
+    last_snapshot = metric_exporter.metric_snapshots.last
+
+    _(last_snapshot.size).must_equal(1)
+    _(last_snapshot[0].data_points[0].value).must_equal(10)
+
+    metric_exporter.pull
+    last_snapshot = metric_exporter.metric_snapshots.last
+
+    _(last_snapshot.size).must_equal(1)
+    _(last_snapshot[0].data_points[0].value).must_equal(10, <<-TEXT) 
+      Unlike UpDownCounter.Add() which takes the increment/delta value, the callback
+      function reports the absolute value of the Asynchronous UpDownCounter
+    TEXT
   end
 end

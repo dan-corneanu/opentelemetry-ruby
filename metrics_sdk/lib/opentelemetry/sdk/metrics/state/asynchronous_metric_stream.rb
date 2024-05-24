@@ -70,7 +70,8 @@ module OpenTelemetry
                 @callback.each do |cb|
                   # See https://opentelemetry.io/docs/specs/otel/metrics/api/#asynchronous-updowncounter-creation
                   value, callback_attributes = cb.call
-                  @aggregation.update(value, attributes.merge(callback_attributes || {}))
+                  # Async instruments report absolute values
+                  @aggregation.set_value(value, attributes.merge(callback_attributes || {}))
                 end
               end
             end
